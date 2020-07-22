@@ -2,6 +2,10 @@ print('Importing Library...')
 import numpy as np
 import cv2
 
+def writeText(image,text):
+	cv2.putText(image,text,(20,40),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),2)
+	return image
+
 def detectEdge(insert_images):
     # Copy to avoid destructive move
     source_image = insert_images.copy()
@@ -14,7 +18,8 @@ def detectEdge(insert_images):
     # Use Canny Edge Detection
     edge = cv2.Canny(source_image,threshold1=lower_value,threshold2=upper_value)
     source_image[edge == 255] = [0,255,0]
-    return source_image
+    
+    return writeText(source_image,'Edge Detection')
 
 def detectContour(source):
 	# Find Canny Edge
@@ -26,7 +31,7 @@ def detectContour(source):
 
 	# Draw Contour
 	cv2.drawContours(desired_contour,contour,-1,(0,255,0),3)
-	return desired_contour
+	return writeText(desired_contour,'Contour Detection')
 
 def detectFace(source):
 	# Use frontalface
@@ -40,7 +45,7 @@ def detectFace(source):
 	face = face_cascade.detectMultiScale(gray,scaleFactor=1.2,minNeighbors=5)
 	for (x,y,w,h) in face:
 		cv2.rectangle(image,(x,y),(x+w,y+h),(0,255,0),3)
-	return image
+	return writeText(image,'Face Detection')
 
 def detectCorner(source):
 	# Convert to gray
@@ -52,7 +57,7 @@ def detectCorner(source):
 
 	# Apply detection
 	source[destination>0.01*destination.max()] = [0,255,0]
-	return source
+	return writeText(source,'Corner Detection')
 
 def applyWatershed(source):
 	source = source.astype(np.uint8)
@@ -94,15 +99,40 @@ def applyWatershed(source):
 	contours, hierarchy = cv2.findContours(watershed_marker,cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
 	cv2.drawContours(image,contours,-1,(255,0,0),5)
 
-	return image
+	return writeText(image,'Watershed Algorithm')
 
 
 videoCapture = cv2.VideoCapture(0)
+
+system = 1
+
 while True:
 	res,frame = videoCapture.read()
-	cv2.imshow('Camera',applyWatershed(frame))
-	if cv2.waitKey(1) == 27:
+
+	if system == 1:
+		cv2.imshow('Camera',detectFace(frame))
+	elif system == 2:
+		cv2.imshow('Camera',detectCorner(frame))
+	elif system == 3:
+		cv2.imshow('Camera',detectContour(frame))
+	elif system == 4:
+		cv2.imshow('Camera',detectEdge(frame))
+	elif system == 5:
+		cv2.imshow('Camera',applyWatershed(frame))
+
+	key = cv2.waitKey(1)
+	if key == 27:
 		break
+	elif key == ord('1'):
+		system = 1
+	elif key == ord('2'):
+		system = 2
+	elif key == ord('3'):
+		system = 3
+	elif key == ord('4'):
+		system = 4
+	elif key == ord('5'):
+		system = 5
 
 videoCapture.release()
 cv2.destroyAllWindows()
